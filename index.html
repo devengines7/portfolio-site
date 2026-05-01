@@ -1,3 +1,1465 @@
----
-layout: front
----
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DEVENGINES — CGI Product Ads That Refuse to Be Scrolled Past</title>
+<meta name="description" content="Cinematic CGI product ads for brands that refuse to look like everyone else. Built end-to-end by a one-person studio.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="DEVENGINES — Make it impossible to ignore.">
+<meta property="og:description" content="Cinematic CGI product ads for brands that refuse to blend in.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0a0a0a;
+  --bg-2:#0f0f0f;
+  --fg:#f0ede8;
+  --dim:#6a6a68;
+  --line:#1c1c1c;
+  --accent:#ff3b1f;
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans:'Inter', system-ui, -apple-system, sans-serif;
+  --serif:'Instrument Serif', 'Times New Roman', serif;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font-family:var(--sans);
+  font-weight:400;
+  overflow-x:hidden;
+  cursor:none;
+  line-height:1.4;
+}
+a{color:inherit;text-decoration:none;cursor:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:none}
+img,canvas,video{display:block;max-width:100%}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ---------- Film grain ---------- */
+.grain{
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:9998;
+  opacity:.06;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:240px 240px;
+  animation:grain 1.4s steps(6) infinite;
+}
+@keyframes grain{
+  0%   {transform:translate(0,0)}
+  20%  {transform:translate(-3%,4%)}
+  40%  {transform:translate(6%,-3%)}
+  60%  {transform:translate(-5%,-6%)}
+  80%  {transform:translate(3%,5%)}
+  100% {transform:translate(0,0)}
+}
+
+/* ---------- Custom cursor ---------- */
+.cursor{
+  position:fixed;top:0;left:0;
+  width:6px;height:6px;
+  background:var(--accent);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:10000;
+  transform:translate(-50%,-50%);
+  transition:width .25s, height .25s, background .25s, border-color .25s;
+  mix-blend-mode:difference;
+}
+.cursor.hover{
+  width:64px;height:64px;
+  background:transparent;
+  border:1px solid var(--accent);
+}
+.cursor-label{
+  position:fixed;top:0;left:0;
+  pointer-events:none;
+  z-index:10001;
+  transform:translate(-50%, calc(-50% + 50px));
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--fg);
+  opacity:0;
+  transition:opacity .2s;
+}
+.cursor-label.show{opacity:1}
+
+/* ---------- HUD ---------- */
+.hud{
+  position:fixed;inset:22px;
+  pointer-events:none;
+  z-index:200;
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--dim);
+  mix-blend-mode:difference;
+}
+.hud > div{position:absolute;line-height:1.7}
+.hud .tl{top:0;left:0}
+.hud .tr{top:0;right:0;text-align:right}
+.hud .bl{bottom:0;left:0}
+.hud .br{bottom:0;right:0;text-align:right}
+.hud b{color:var(--fg);font-weight:500}
+.hud .blink{animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.dot{
+  display:inline-block;width:6px;height:6px;
+  background:var(--accent);border-radius:50%;
+  margin-right:8px;vertical-align:middle;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.5);opacity:.4}
+}
+
+/* ---------- Top nav ---------- */
+nav.top{
+  position:fixed;
+  top:22px;left:50%;
+  transform:translateX(-50%);
+  z-index:300;
+  display:flex;
+  gap:28px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  mix-blend-mode:difference;
+}
+nav.top a{
+  position:relative;color:var(--fg);
+  opacity:.65;transition:opacity .25s;
+  padding:4px 0;
+}
+nav.top a:hover{opacity:1}
+nav.top a::before{
+  content:'';position:absolute;left:-12px;top:50%;
+  width:4px;height:4px;background:var(--accent);
+  border-radius:50%;opacity:0;
+  transform:translateY(-50%) scale(0);
+  transition:all .25s;
+}
+nav.top a:hover::before{opacity:1;transform:translateY(-50%) scale(1)}
+
+/* ---------- Hero ---------- */
+.hero{
+  position:relative;
+  height:100svh;
+  width:100%;
+  display:flex;align-items:flex-end;
+  padding:0 32px 64px;
+  overflow:hidden;
+}
+#hero-canvas{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  z-index:0;
+}
+.hero-vignette{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.55) 100%),
+    linear-gradient(to bottom, rgba(10,10,10,.4) 0, transparent 25%, transparent 60%, rgba(10,10,10,.75) 100%);
+  z-index:1;pointer-events:none;
+}
+.hero-content{
+  position:relative;z-index:2;
+  width:100%;max-width:1700px;margin:0 auto;
+}
+.hero-eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:28px;
+  display:flex;align-items:center;gap:14px;
+  flex-wrap:wrap;
+}
+.hero-eyebrow::before{
+  content:'';width:32px;height:1px;background:var(--accent);
+}
+.hero-eyebrow span{color:var(--fg);opacity:.7}
+.hero h1{
+  font-family:var(--sans);
+  font-weight:900;
+  font-size:clamp(56px, 13.5vw, 220px);
+  line-height:.86;
+  letter-spacing:-.045em;
+}
+.hero h1 em{
+  font-family:var(--serif);
+  font-style:italic;
+  font-weight:400;
+  color:var(--accent);
+  letter-spacing:-.02em;
+}
+.hero-meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  margin-top:48px;
+  gap:64px;
+  flex-wrap:wrap;
+}
+.hero-tagline{
+  font-family:var(--mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--fg);
+  opacity:.78;
+  max-width:380px;
+  line-height:1.85;
+}
+.hero-tagline b{color:var(--accent);font-weight:500}
+.hero-scroll{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--dim);
+  display:flex;align-items:center;gap:12px;
+}
+.hero-scroll::after{
+  content:'';
+  display:block;
+  width:1px;height:32px;
+  background:linear-gradient(to bottom, var(--dim), transparent);
+  animation:scrollHint 2s ease-in-out infinite;
+}
+@keyframes scrollHint{
+  0%{transform:scaleY(0);transform-origin:top}
+  50%{transform:scaleY(1);transform-origin:top}
+  51%{transform-origin:bottom}
+  100%{transform:scaleY(0);transform-origin:bottom}
+}
+
+/* ---------- Section base ---------- */
+section{
+  position:relative;
+  padding:140px 32px;
+  max-width:1700px;
+  margin:0 auto;
+}
+.section-label{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--accent);
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:56px;
+}
+.section-label::before{
+  content:'';width:32px;height:1px;background:var(--accent);
+}
+.section-label .num{color:var(--dim)}
+
+/* ---------- Manifesto / About ---------- */
+.manifesto h2{
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(28px, 5.2vw, 76px);
+  line-height:1.05;
+  letter-spacing:-.025em;
+  max-width:1300px;
+}
+.manifesto h2 em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.manifesto h2 .small{
+  font-family:var(--mono);
+  font-size:.18em;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--dim);
+  vertical-align:middle;
+  margin-left:14px;
+}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:32px;
+  margin-top:96px;
+  padding-top:40px;
+  border-top:1px solid var(--line);
+}
+.stat .label{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-bottom:14px;
+}
+.stat .value{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:clamp(24px, 2.8vw, 38px);
+  letter-spacing:-.02em;
+  line-height:1;
+}
+.stat .value em{
+  font-family:var(--serif);
+  font-style:italic;
+  font-weight:400;
+  color:var(--accent);
+}
+.stat .sub{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--accent);
+  margin-top:10px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+/* ---------- Capabilities marquee ---------- */
+.marquee-wrap{padding:0;max-width:none}
+.marquee{
+  overflow:hidden;
+  padding:32px 0;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+  position:relative;
+}
+.marquee-track{
+  display:inline-flex;
+  animation:marquee 38s linear infinite;
+  font-family:var(--serif);
+  font-size:clamp(44px, 8vw, 116px);
+  line-height:1;
+  letter-spacing:-.02em;
+  align-items:center;
+}
+.marquee-track > span{
+  display:inline-flex;
+  align-items:center;
+  padding:0 26px;
+  gap:26px;
+}
+.marquee-track .sep{
+  color:var(--accent);
+  font-size:.32em;
+  vertical-align:middle;
+  font-family:var(--sans);
+}
+.marquee-track .it{font-style:italic;color:var(--accent)}
+.marquee-track .dim{color:var(--dim)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+/* ---------- Work ---------- */
+.work-head{
+  display:grid;
+  grid-template-columns:1.4fr 1fr;
+  gap:48px;
+  align-items:end;
+  margin-bottom:64px;
+}
+.work-head h3{
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(32px, 4.4vw, 64px);
+  line-height:1.05;
+  letter-spacing:-.025em;
+  max-width:850px;
+}
+.work-head h3 em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.work-head p{
+  font-family:var(--mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  color:var(--dim);
+  line-height:1.85;
+  max-width:380px;
+}
+.work-grid{
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  gap:48px 24px;
+}
+.work-item{
+  position:relative;
+  display:flex;flex-direction:column;
+}
+.work-item:nth-child(1){grid-column:span 7}
+.work-item:nth-child(2){grid-column:span 5}
+.work-item:nth-child(3){grid-column:span 5}
+.work-item:nth-child(4){grid-column:span 7}
+.work-item:nth-child(5){grid-column:span 6}
+.work-item:nth-child(6){grid-column:span 6}
+
+.tile{
+  position:relative;
+  aspect-ratio:16/10;
+  overflow:hidden;
+  background:#060606;
+  border:1px solid var(--line);
+  transition:border-color .4s, transform .6s cubic-bezier(.16,1,.3,1);
+}
+.tile canvas{width:100%;height:100%;display:block;transition:transform .8s cubic-bezier(.16,1,.3,1)}
+.work-item:hover .tile{border-color:var(--accent)}
+.work-item:hover .tile canvas{transform:scale(1.04)}
+
+.tile-overlay{
+  position:absolute;inset:0;
+  pointer-events:none;
+  background:linear-gradient(to bottom, transparent 60%, rgba(0,0,0,.55) 100%);
+}
+.tile-tag{
+  position:absolute;top:14px;left:14px;
+  font-family:var(--mono);
+  font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--fg);
+  padding:5px 10px;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.08);
+  z-index:5;
+}
+.tile-coord{
+  position:absolute;top:14px;right:14px;
+  font-family:var(--mono);
+  font-size:9px;letter-spacing:.12em;
+  color:var(--accent);z-index:5;
+}
+.tile-runtime{
+  position:absolute;bottom:14px;right:14px;
+  font-family:var(--mono);
+  font-size:9px;letter-spacing:.12em;
+  color:var(--fg);opacity:.75;z-index:5;
+}
+.tile-aspect{
+  position:absolute;bottom:14px;left:14px;
+  font-family:var(--mono);
+  font-size:9px;letter-spacing:.14em;
+  color:var(--fg);opacity:.6;z-index:5;
+  text-transform:uppercase;
+}
+
+.work-meta{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:24px;
+  align-items:start;
+  margin-top:20px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.work-meta .index{color:var(--accent)}
+.work-meta .title-block .title{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:20px;
+  letter-spacing:-.01em;
+  text-transform:none;
+  color:var(--fg);
+}
+.work-meta .title-block .client{
+  color:var(--dim);
+  margin-top:4px;
+  font-size:10px;
+}
+.work-meta .specs{
+  text-align:right;
+  color:var(--dim);
+  line-height:1.85;
+}
+
+/* ---------- How it works ---------- */
+.how-intro{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:48px;
+  align-items:end;
+  margin-bottom:72px;
+}
+.how-intro h3{
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(32px, 4.5vw, 64px);
+  line-height:1.05;
+  letter-spacing:-.025em;
+}
+.how-intro h3 em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.how-intro p{
+  font-size:15px;
+  line-height:1.65;
+  color:var(--dim);
+  max-width:480px;
+}
+.how-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.how-step{
+  padding:48px 32px 56px;
+  border-right:1px solid var(--line);
+  position:relative;
+  transition:background .4s;
+}
+.how-step:last-child{border-right:none}
+.how-step:hover{background:var(--bg-2)}
+.how-step .num{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.2em;
+  color:var(--accent);
+  margin-bottom:32px;
+}
+.how-step h4{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:32px;
+  letter-spacing:-.02em;
+  margin-bottom:16px;
+}
+.how-step h4 em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.how-step p{
+  font-size:14px;
+  line-height:1.7;
+  color:var(--fg);
+  opacity:.78;
+  margin-bottom:24px;
+  max-width:360px;
+}
+.how-step ul{
+  list-style:none;
+  font-family:var(--mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--dim);
+  line-height:1.95;
+}
+.how-step ul li::before{
+  content:'';
+  display:inline-block;
+  width:6px;height:1px;
+  background:var(--accent);
+  vertical-align:middle;
+  margin-right:8px;
+}
+
+/* ---------- Why it works (small bold band) ---------- */
+.why{
+  padding:72px 32px;
+  max-width:1700px;margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:32px;
+  border-top:1px solid var(--line);
+}
+.why .point{
+  font-family:var(--sans);
+  font-weight:500;
+  font-size:18px;
+  line-height:1.35;
+  letter-spacing:-.015em;
+}
+.why .point em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.why .point .lbl{
+  display:block;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--dim);
+  font-weight:400;
+  margin-bottom:18px;
+}
+
+/* ---------- CTA ---------- */
+.cta{
+  text-align:center;
+  padding:200px 32px 160px;
+  position:relative;
+  overflow:hidden;
+}
+.cta-bg{
+  position:absolute;inset:0;
+  z-index:0;
+  opacity:.45;
+}
+.cta-bg canvas{width:100%;height:100%}
+.cta-fade{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at center, transparent 30%, var(--bg) 75%);
+  z-index:1;
+}
+.cta-inner{position:relative;z-index:2}
+.cta-eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:32px;
+}
+.cta h2{
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(48px, 11vw, 180px);
+  line-height:.92;
+  letter-spacing:-.045em;
+  max-width:1500px;
+  margin:0 auto;
+}
+.cta h2 em{
+  font-family:var(--serif);
+  font-style:italic;
+  color:var(--accent);
+  font-weight:400;
+}
+.cta-mail{
+  display:inline-flex;
+  align-items:center;
+  gap:18px;
+  margin-top:64px;
+  font-family:var(--mono);
+  font-size:13px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  padding:20px 32px;
+  border:1px solid var(--fg);
+  transition:all .4s;
+  color:var(--fg);
+}
+.cta-mail::after{
+  content:'↗';
+  font-family:var(--sans);
+  font-size:18px;
+  transition:transform .4s;
+}
+.cta-mail:hover{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.cta-mail:hover::after{transform:translate(4px,-4px)}
+.cta-note{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-top:36px;
+}
+
+/* ---------- Footer ---------- */
+footer{
+  border-top:1px solid var(--line);
+  padding:56px 32px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+footer .row{
+  max-width:1700px;margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:48px;
+  align-items:start;
+}
+footer .left .brand{
+  font-family:var(--sans);
+  font-size:18px;
+  letter-spacing:-.01em;
+  margin-bottom:8px;
+  text-transform:none;
+  font-weight:500;
+}
+footer .left .loc{color:var(--dim)}
+footer .socials{
+  display:flex;gap:26px;flex-wrap:wrap;
+  justify-content:center;
+}
+footer .socials a{
+  color:var(--fg);opacity:.7;
+  transition:all .25s;
+}
+footer .socials a:hover{color:var(--accent);opacity:1}
+footer .right{text-align:right;color:var(--dim);line-height:1.85}
+footer .right b{color:var(--fg);font-weight:500}
+
+/* ---------- Reveal ---------- */
+[data-reveal]{
+  opacity:0;
+  transform:translateY(40px);
+  transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1);
+}
+[data-reveal].in{opacity:1;transform:translateY(0)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  body{cursor:auto}
+  .cursor,.cursor-label{display:none}
+  nav.top{gap:16px;font-size:9px}
+  .hud{font-size:9px;inset:14px;letter-spacing:.1em}
+  .hud .tr,.hud .br{display:none}
+  .hero{padding:0 20px 48px}
+  .hero-meta{flex-direction:column;align-items:flex-start;gap:32px}
+  section{padding:96px 20px}
+  .stats{grid-template-columns:repeat(2, 1fr);gap:28px;margin-top:56px}
+  .work-head{grid-template-columns:1fr;gap:24px}
+  .work-item{grid-column:span 12 !important}
+  .how-intro{grid-template-columns:1fr;gap:24px}
+  .how-grid{grid-template-columns:1fr}
+  .how-step{border-right:none;border-bottom:1px solid var(--line);padding:36px 24px 40px}
+  .how-step:last-child{border-bottom:none}
+  .why{grid-template-columns:repeat(2, 1fr);padding:48px 20px;gap:24px}
+  .cta{padding:140px 20px 100px}
+  footer{padding:36px 20px}
+  footer .row{grid-template-columns:1fr;gap:32px;text-align:left}
+  footer .right{text-align:left}
+  footer .socials{justify-content:flex-start;gap:18px}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  [data-reveal]{opacity:1;transform:none}
+}
+</style>
+</head>
+
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-label" id="cursor-label"></div>
+
+<!-- Film grain -->
+<div class="grain" aria-hidden="true"></div>
+
+<!-- HUD overlay -->
+<div class="hud" aria-hidden="true">
+  <div class="tl">
+    <div><span class="dot"></span><b>DEVENGINES</b> · STUDIO</div>
+    <div>REC <span class="blink">●</span> &nbsp;LIVE</div>
+  </div>
+  <div class="tr">
+    <div id="tc">00:00:00:00</div>
+    <div>16:9 / 9:16 / 1:1</div>
+  </div>
+  <div class="bl">
+    <div>STATUS — <b>OPEN FOR COMMISSIONS</b></div>
+    <div id="latlon">REMOTE STUDIO</div>
+  </div>
+  <div class="br">
+    <div>SHOT <b id="shotno">001 / 06</b></div>
+    <div>FORMAT — CGI / AD</div>
+  </div>
+</div>
+
+<!-- Top nav -->
+<nav class="top">
+  <a href="#work" data-cursor="View">Work</a>
+  <a href="#about" data-cursor="Read">Studio</a>
+  <a href="#how" data-cursor="Read">How</a>
+  <a href="#contact" data-cursor="Brief">Contact</a>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-vignette"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">DEVENGINES STUDIO <span>· CGI PRODUCT ADS · COMMISSIONS OPEN ·</span></div>
+    <h1>
+      Make&nbsp;it<br>
+      <em>impossible</em><br>
+      to&nbsp;ignore.
+    </h1>
+    <div class="hero-meta">
+      <p class="hero-tagline">
+        Cinematic CGI product ads for brands that <b>refuse to look like everyone else</b>. Modeled, lit, simulated, and graded under one pipeline — built to stop the scroll, hold the eye, sell the thing.
+      </p>
+      <div class="hero-scroll">SCROLL ↓</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ABOUT / MANIFESTO ============ -->
+<section class="manifesto" id="about">
+  <div class="section-label" data-reveal><span class="num">01 ·</span> &nbsp;Studio</div>
+  <h2 data-reveal>
+    I don't make 3D renders.<br>
+    I make <em>ads that sell the product</em><span class="small">— minimal, bold, slightly dramatic, occasionally funny —</span> and engineered to land in three seconds or less.
+  </h2>
+  <div class="stats" data-reveal>
+    <div class="stat">
+      <div class="label">First Frame</div>
+      <div class="value">≤ <em>3s</em></div>
+      <div class="sub">Hook before the scroll</div>
+    </div>
+    <div class="stat">
+      <div class="label">Aspect Ratios</div>
+      <div class="value">16:9 · 9:16 · 1:1</div>
+      <div class="sub">Every feed, every platform</div>
+    </div>
+    <div class="stat">
+      <div class="label">Brand-Led</div>
+      <div class="value"><em>Your</em> guidelines</div>
+      <div class="sub">Your tone, your palette</div>
+    </div>
+    <div class="stat">
+      <div class="label">Coverage</div>
+      <div class="value">End-to-End</div>
+      <div class="sub">Brief → Final master</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CAPABILITIES MARQUEE ============ -->
+<div class="marquee-wrap">
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>Product Films <span class="sep">✺</span></span>
+      <span class="it"><em>Launch Campaigns</em> <span class="sep">✺</span></span>
+      <span>Social Ads <span class="sep">✺</span></span>
+      <span class="dim">Hero Visuals <span class="sep">✺</span></span>
+      <span class="it"><em>Brand Reels</em> <span class="sep">✺</span></span>
+      <span>Pack-Shots <span class="sep">✺</span></span>
+      <span class="dim">Commercials <span class="sep">✺</span></span>
+      <!-- loop -->
+      <span>Product Films <span class="sep">✺</span></span>
+      <span class="it"><em>Launch Campaigns</em> <span class="sep">✺</span></span>
+      <span>Social Ads <span class="sep">✺</span></span>
+      <span class="dim">Hero Visuals <span class="sep">✺</span></span>
+      <span class="it"><em>Brand Reels</em> <span class="sep">✺</span></span>
+      <span>Pack-Shots <span class="sep">✺</span></span>
+      <span class="dim">Commercials <span class="sep">✺</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SELECTED WORK ============ -->
+<section id="work">
+  <div class="section-label" data-reveal><span class="num">02 ·</span> &nbsp;Selected Work · 2024 — 2026</div>
+
+  <div class="work-head">
+    <h3 data-reveal>Six ads.<br>Six categories.<br>Zero <em>scrolled</em> past.</h3>
+    <p data-reveal>Each shot built for the way people actually watch — phone in hand, thumb mid-flick, attention on loan. Replace these tiles with your real renders; the layout flexes around them.</p>
+  </div>
+
+  <div class="work-grid">
+
+    <a href="#" class="work-item" data-cursor="Open · 01" data-reveal>
+      <div class="tile">
+        <canvas data-tile="0"></canvas>
+        <div class="tile-tag">PRODUCT FILM</div>
+        <div class="tile-coord">SHOT_001</div>
+        <div class="tile-aspect">16:9 · 4K</div>
+        <div class="tile-runtime">00:00:42</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">01 /</div>
+        <div class="title-block">
+          <div class="title">Ember 7</div>
+          <div class="client">Beverage · Hero Spot</div>
+        </div>
+        <div class="specs">CINEMATIC<br>30s + cuts</div>
+      </div>
+    </a>
+
+    <a href="#" class="work-item" data-cursor="Open · 02" data-reveal>
+      <div class="tile">
+        <canvas data-tile="1"></canvas>
+        <div class="tile-tag">SOCIAL · 9:16</div>
+        <div class="tile-coord">SHOT_002</div>
+        <div class="tile-aspect">9:16 · 4K</div>
+        <div class="tile-runtime">00:00:18</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">02 /</div>
+        <div class="title-block">
+          <div class="title">Stride / Heat</div>
+          <div class="client">Footwear · Drop Campaign</div>
+        </div>
+        <div class="specs">VERTICAL<br>15s loop</div>
+      </div>
+    </a>
+
+    <a href="#" class="work-item" data-cursor="Open · 03" data-reveal>
+      <div class="tile">
+        <canvas data-tile="2"></canvas>
+        <div class="tile-tag">LAUNCH FILM</div>
+        <div class="tile-coord">SHOT_003</div>
+        <div class="tile-aspect">21:9 · 4K</div>
+        <div class="tile-runtime">00:00:31</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">03 /</div>
+        <div class="title-block">
+          <div class="title">Pulse Object</div>
+          <div class="client">Tech / Audio · Reveal</div>
+        </div>
+        <div class="specs">UWIDE<br>30s spot</div>
+      </div>
+    </a>
+
+    <a href="#" class="work-item" data-cursor="Open · 04" data-reveal>
+      <div class="tile">
+        <canvas data-tile="3"></canvas>
+        <div class="tile-tag">BRAND REEL</div>
+        <div class="tile-coord">SHOT_004</div>
+        <div class="tile-aspect">16:9 · 4K</div>
+        <div class="tile-runtime">00:01:04</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">04 /</div>
+        <div class="title-block">
+          <div class="title">Aura</div>
+          <div class="client">Skincare · Brand Film</div>
+        </div>
+        <div class="specs">CINEMATIC<br>60s + cutdowns</div>
+      </div>
+    </a>
+
+    <a href="#" class="work-item" data-cursor="Open · 05" data-reveal>
+      <div class="tile">
+        <canvas data-tile="4"></canvas>
+        <div class="tile-tag">SHORT FORM</div>
+        <div class="tile-coord">SHOT_005</div>
+        <div class="tile-aspect">1:1 · 4K</div>
+        <div class="tile-runtime">00:00:12</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">05 /</div>
+        <div class="title-block">
+          <div class="title">Still Life 02</div>
+          <div class="client">Coffee · Daily Spot</div>
+        </div>
+        <div class="specs">SQUARE<br>12s × 6</div>
+      </div>
+    </a>
+
+    <a href="#" class="work-item" data-cursor="Open · 06" data-reveal>
+      <div class="tile">
+        <canvas data-tile="5"></canvas>
+        <div class="tile-tag">COMMERCIAL</div>
+        <div class="tile-coord">SHOT_006</div>
+        <div class="tile-aspect">16:9 · 4K</div>
+        <div class="tile-runtime">00:00:45</div>
+        <div class="tile-overlay"></div>
+      </div>
+      <div class="work-meta">
+        <div class="index">06 /</div>
+        <div class="title-block">
+          <div class="title">Velocity Fold</div>
+          <div class="client">Auto · Launch Spot</div>
+        </div>
+        <div class="specs">CINEMATIC<br>45s spot</div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="how">
+  <div class="section-label" data-reveal><span class="num">03 ·</span> &nbsp;How It Works</div>
+
+  <div class="how-intro">
+    <h3 data-reveal>Brief in.<br>Ad <em>out</em>.</h3>
+    <p data-reveal>One studio. Three steps. No producers, no decks, no pass-the-baton between five vendors. You write the brief; you get the master back.</p>
+  </div>
+
+  <div class="how-grid" data-reveal>
+    <div class="how-step">
+      <div class="num">/ 01 &nbsp; BRIEF</div>
+      <h4>Lock the <em>angle</em>.</h4>
+      <p>You bring the product, the goal, and the audience. I bring the angle, the storyboards, and the shot list — usually inside a week.</p>
+      <ul>
+        <li>Concept &amp; mood</li>
+        <li>Storyboard / animatic</li>
+        <li>Aspect-ratio plan</li>
+      </ul>
+    </div>
+    <div class="how-step">
+      <div class="num">/ 02 &nbsp; BUILD</div>
+      <h4>Model. Light. <em>Direct</em>.</h4>
+      <p>Modeled in Blender, shaded for camera, simulated where it matters, lit like a film set. Every frame is a directed shot — not a render dump.</p>
+      <ul>
+        <li>Modeling &amp; shading</li>
+        <li>Sim &amp; FX (EmberGen)</li>
+        <li>Cinematic lighting</li>
+      </ul>
+    </div>
+    <div class="how-step">
+      <div class="num">/ 03 &nbsp; SHIP</div>
+      <h4>Cut, grade, <em>master</em>.</h4>
+      <p>Comp in After Effects, grade in DaVinci, packaged for every platform you need. Hero spot, vertical cuts, square cuts — all from the same shoot.</p>
+      <ul>
+        <li>Comp &amp; finish</li>
+        <li>Color grade</li>
+        <li>Master + cutdowns</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHY IT WORKS ============ -->
+<section style="padding:0;max-width:1700px;margin:0 auto">
+  <div class="why" data-reveal>
+    <div class="point"><span class="lbl">/ 01</span>Hook in the <em>first three seconds</em>, or it didn't happen.</div>
+    <div class="point"><span class="lbl">/ 02</span>Minimal frame.<br><em>Maximum</em> recall.</div>
+    <div class="point"><span class="lbl">/ 03</span>Looks expensive.<br>Made <em>remote</em>.</div>
+    <div class="point"><span class="lbl">/ 04</span>Built for paid, organic, OOH, and <em>pitch decks</em>.</div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta" id="contact">
+  <div class="cta-bg"><canvas id="cta-canvas"></canvas></div>
+  <div class="cta-fade"></div>
+  <div class="cta-inner">
+    <div class="cta-eyebrow">/ TAKE THE BRIEF</div>
+    <h2>Let's make<br>it <em>impossible</em><br>to ignore.</h2>
+    <a href="mailto:devengines@gmail.com?subject=Brief%20Inquiry" class="cta-mail" data-cursor="Compose">devengines@gmail.com</a>
+    <div class="cta-note">REPLIES WITHIN 24H · COMMISSIONS OPEN</div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="row">
+    <div class="left">
+      <div class="brand">DEVENGINES Studios</div>
+      <div class="loc">Remote / Worldwide · Open for Commissions · 2026</div>
+    </div>
+    <div class="socials">
+      <a href="https://instagram.com/devengines_" target="_blank" rel="noopener" data-cursor="Open">Instagram</a>
+      <a href="https://behance.net/devengines_" target="_blank" rel="noopener" data-cursor="Open">Behance</a>
+      <a href="https://youtube.com/@DevEngineStudios" target="_blank" rel="noopener" data-cursor="Open">YouTube</a>
+      <a href="https://linkedin.com/in/devengines" target="_blank" rel="noopener" data-cursor="Open">LinkedIn</a>
+      <a href="https://x.com/devengines_" target="_blank" rel="noopener" data-cursor="Open">Twitter</a>
+    </div>
+    <div class="right">
+      <div><b>devengines@gmail.com</b></div>
+      <div>© DEVENGINES — All Frames Reserved</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   Custom cursor with hover labels
+   ============================================================ */
+const cursor      = document.getElementById('cursor');
+const cursorLabel = document.getElementById('cursor-label');
+let mx = innerWidth/2, my = innerHeight/2;
+let cx = mx, cy = my;
+addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function tickCursor(){
+  cx += (mx - cx) * 0.22;
+  cy += (my - cy) * 0.22;
+  cursor.style.transform      = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+  cursorLabel.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, calc(-50% + 48px))`;
+  requestAnimationFrame(tickCursor);
+}
+tickCursor();
+
+document.querySelectorAll('a, .work-item, button, .cta-mail').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.classList.add('hover');
+    const lbl = el.dataset.cursor;
+    if (lbl) { cursorLabel.textContent = lbl; cursorLabel.classList.add('show'); }
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.classList.remove('hover');
+    cursorLabel.classList.remove('show');
+  });
+});
+
+/* ============================================================
+   HUD — live timecode + shot tracker
+   ============================================================ */
+const tcEl   = document.getElementById('tc');
+const shotEl = document.getElementById('shotno');
+
+function updateTC(){
+  const d = new Date();
+  const f = String((d.getMilliseconds()/1000 * 24) | 0).padStart(2,'0');
+  tcEl.textContent =
+    String(d.getHours()  ).padStart(2,'0') + ':' +
+    String(d.getMinutes()).padStart(2,'0') + ':' +
+    String(d.getSeconds()).padStart(2,'0') + ':' + f;
+  requestAnimationFrame(updateTC);
+}
+updateTC();
+
+const shotItems = document.querySelectorAll('.work-item');
+const shotObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting){
+      const i = Array.from(shotItems).indexOf(e.target);
+      shotEl.textContent = String(i+1).padStart(3,'0') + ' / 06';
+    }
+  });
+}, { threshold: 0.5 });
+shotItems.forEach(el => shotObs.observe(el));
+
+/* ============================================================
+   Reveal-on-scroll
+   ============================================================ */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('[data-reveal]').forEach(el => revObs.observe(el));
+
+/* ============================================================
+   WebGL — domain-warped FBM volumetric
+   The hero shader evokes EmberGen-style smoke / fluid flow.
+   Tile shader = same family with per-tile palettes + speeds.
+   ============================================================ */
+
+const VERT = `
+attribute vec2 a_pos;
+void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FRAG_HERO = `
+precision highp float;
+uniform float u_time;
+uniform vec2  u_res;
+uniform vec2  u_mouse;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){
+  vec2 i=floor(p), f=fract(p);
+  float a=h(i), b=h(i+vec2(1,0)), c=h(i+vec2(0,1)), d=h(i+vec2(1,1));
+  vec2 u=f*f*(3.0-2.0*f);
+  return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+}
+float fbm(vec2 p){
+  float v=0.0, a=0.5;
+  for(int i=0;i<6;i++){ v += a*n(p); p *= 2.07; a *= 0.5; }
+  return v;
+}
+void main(){
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 p  = vec2(uv.x*1.6, uv.y*1.0);
+  float t = u_time * 0.06;
+
+  // upward drift (rising heat)
+  p.y -= t * 0.45;
+
+  // domain warp — Inigo Quilez style
+  vec2 q = vec2( fbm(p + t),                        fbm(p + vec2(5.2,1.3) + t) );
+  vec2 r = vec2( fbm(p + 3.0*q + vec2(1.7,9.2) + t*1.3),
+                 fbm(p + 3.0*q + vec2(8.3,2.8) + t*1.3) );
+  float v = fbm(p + 4.0*r);
+
+  // mouse heat — shader responds to cursor
+  float md = length((uv - u_mouse) * vec2(u_res.x/u_res.y, 1.0));
+  float heat = exp(-md*md*7.0) * 0.36;
+  v += heat;
+
+  // vertical falloff
+  float fall = smoothstep(0.0, 0.55, uv.y);
+  v *= mix(0.85, 1.12, fall);
+
+  // colour ramp: deep black → ember → orange → near-white core
+  vec3 col = vec3(0.022, 0.020, 0.025);
+  col = mix(col, vec3(0.10, 0.04, 0.04), smoothstep(0.30, 0.55, v));
+  col = mix(col, vec3(0.55, 0.13, 0.04), smoothstep(0.50, 0.70, v));
+  col = mix(col, vec3(1.00, 0.28, 0.10), smoothstep(0.66, 0.84, v));
+  col = mix(col, vec3(1.00, 0.62, 0.32), smoothstep(0.82, 0.95, v));
+
+  // grain
+  col += h(gl_FragCoord.xy + u_time)*0.04 - 0.02;
+
+  // vignette
+  vec2 vd = uv - 0.5;
+  col *= 1.0 - dot(vd, vd) * 1.4;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const FRAG_TILE = `
+precision highp float;
+uniform float u_time;
+uniform vec2  u_res;
+uniform float u_seed;
+uniform vec3  u_c1;
+uniform vec3  u_c2;
+uniform vec3  u_c3;
+uniform vec3  u_c4;
+uniform float u_speed;
+uniform float u_warp;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){
+  vec2 i=floor(p), f=fract(p);
+  float a=h(i), b=h(i+vec2(1,0)), c=h(i+vec2(0,1)), d=h(i+vec2(1,1));
+  vec2 u=f*f*(3.0-2.0*f);
+  return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+}
+float fbm(vec2 p){
+  float v=0.0, a=0.5;
+  for(int i=0;i<5;i++){ v += a*n(p); p *= 2.07; a *= 0.5; }
+  return v;
+}
+void main(){
+  vec2 uv = gl_FragCoord.xy / u_res;
+  vec2 p  = uv * 2.4 + u_seed;
+  float t = u_time * u_speed * 0.05;
+  p.y -= t * 0.35;
+
+  vec2 q = vec2( fbm(p + t),                        fbm(p + vec2(5.2,1.3) + t) );
+  vec2 r = vec2( fbm(p + u_warp*q + vec2(1.7,9.2) + t*1.3),
+                 fbm(p + u_warp*q + vec2(8.3,2.8) + t*1.3) );
+  float v = fbm(p + 4.0*r);
+
+  vec3 col = u_c1;
+  col = mix(col, u_c2, smoothstep(0.32, 0.58, v));
+  col = mix(col, u_c3, smoothstep(0.55, 0.78, v));
+  col = mix(col, u_c4, smoothstep(0.78, 0.94, v));
+
+  // grain
+  col += h(gl_FragCoord.xy + u_time)*0.04 - 0.02;
+
+  // vignette
+  vec2 vd = uv - 0.5;
+  col *= 1.0 - dot(vd, vd) * 1.15;
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+function compile(gl, type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+function setupGL(canvas, fragSrc){
+  const gl = canvas.getContext('webgl', { alpha:false, antialias:false, premultipliedAlpha:false, powerPreference:'high-performance' });
+  if (!gl) return null;
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, fragSrc));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog));
+    return null;
+  }
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  return { gl, prog };
+}
+
+/* ----- Hero ----- */
+(function heroSim(){
+  const c   = document.getElementById('hero-canvas');
+  const ctx = setupGL(c, FRAG_HERO);
+  if (!ctx) { c.style.background = 'radial-gradient(ellipse at 50% 60%, #ff3b1f22, #0a0a0a 70%)'; return; }
+  const { gl, prog } = ctx;
+  const uTime  = gl.getUniformLocation(prog, 'u_time');
+  const uRes   = gl.getUniformLocation(prog, 'u_res');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  let mxN = 0.5, myN = 0.4, tmxN = 0.5, tmyN = 0.4;
+  addEventListener('mousemove', e => {
+    tmxN = e.clientX / innerWidth;
+    tmyN = 1 - e.clientY / innerHeight;
+  });
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    c.width  = innerWidth  * dpr;
+    c.height = innerHeight * dpr;
+    gl.viewport(0,0,c.width,c.height);
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  const t0 = performance.now();
+  function frame(){
+    mxN += (tmxN - mxN) * 0.06;
+    myN += (tmyN - myN) * 0.06;
+    const t = (performance.now() - t0) / 1000;
+    gl.uniform1f(uTime, t);
+    gl.uniform2f(uRes, c.width, c.height);
+    gl.uniform2f(uMouse, mxN, myN);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ----- Tiles — different palettes per project ----- */
+const tilePalettes = [
+  // 01 Ember 7 / Beverage — deep ember
+  { c1:[0.04,0.02,0.02], c2:[0.30,0.07,0.04], c3:[0.85,0.22,0.08], c4:[1.00,0.55,0.22], speed:1.0, warp:3.2 },
+  // 02 Stride / Heat — electric blue + flash
+  { c1:[0.02,0.03,0.06], c2:[0.07,0.12,0.32], c3:[0.18,0.42,0.85], c4:[0.95,0.95,1.00], speed:1.6, warp:3.6 },
+  // 03 Pulse Object / Tech — cold steel + cyan
+  { c1:[0.03,0.04,0.06], c2:[0.10,0.15,0.22], c3:[0.30,0.55,0.75], c4:[0.90,0.96,1.00], speed:0.7, warp:2.8 },
+  // 04 Aura / Skincare — soft pink → cream
+  { c1:[0.05,0.03,0.04], c2:[0.30,0.12,0.20], c3:[0.80,0.42,0.55], c4:[1.00,0.88,0.78], speed:0.55, warp:3.0 },
+  // 05 Still Life / Coffee — espresso → cream
+  { c1:[0.04,0.025,0.02], c2:[0.18,0.08,0.04], c3:[0.55,0.30,0.15], c4:[1.00,0.85,0.65], speed:0.6, warp:2.6 },
+  // 06 Velocity Fold / Auto — black → blood red
+  { c1:[0.02,0.02,0.02], c2:[0.18,0.03,0.03], c3:[0.85,0.10,0.05], c4:[1.00,0.35,0.10], speed:1.4, warp:3.8 },
+];
+
+document.querySelectorAll('canvas[data-tile]').forEach((c, i) => {
+  const idx = parseInt(c.dataset.tile, 10);
+  const ctx = setupGL(c, FRAG_TILE);
+  if (!ctx) { c.style.background = '#111'; return; }
+  const { gl, prog } = ctx;
+  const uTime  = gl.getUniformLocation(prog, 'u_time');
+  const uRes   = gl.getUniformLocation(prog, 'u_res');
+  const uSeed  = gl.getUniformLocation(prog, 'u_seed');
+  const uC1    = gl.getUniformLocation(prog, 'u_c1');
+  const uC2    = gl.getUniformLocation(prog, 'u_c2');
+  const uC3    = gl.getUniformLocation(prog, 'u_c3');
+  const uC4    = gl.getUniformLocation(prog, 'u_c4');
+  const uSpeed = gl.getUniformLocation(prog, 'u_speed');
+  const uWarp  = gl.getUniformLocation(prog, 'u_warp');
+
+  const pal  = tilePalettes[idx % tilePalettes.length];
+  const seed = idx * 17.3 + Math.random()*2;
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    c.width  = w * dpr;
+    c.height = h * dpr;
+    gl.viewport(0, 0, c.width, c.height);
+  }
+  resize();
+  new ResizeObserver(resize).observe(c);
+
+  const t0 = performance.now() + Math.random() * 9000;
+  let visible = false;
+  new IntersectionObserver(([e]) => visible = e.isIntersecting, { threshold: 0.05 }).observe(c);
+
+  function frame(){
+    if (visible){
+      const t = (performance.now() - t0) / 1000;
+      gl.uniform1f(uTime, t);
+      gl.uniform2f(uRes, c.width, c.height);
+      gl.uniform1f(uSeed, seed);
+      gl.uniform3fv(uC1, pal.c1);
+      gl.uniform3fv(uC2, pal.c2);
+      gl.uniform3fv(uC3, pal.c3);
+      gl.uniform3fv(uC4, pal.c4);
+      gl.uniform1f(uSpeed, pal.speed);
+      gl.uniform1f(uWarp, pal.warp);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+});
+
+/* ----- CTA background — slow cousin of hero ----- */
+(function ctaSim(){
+  const c   = document.getElementById('cta-canvas');
+  const ctx = setupGL(c, FRAG_TILE);
+  if (!ctx) return;
+  const { gl, prog } = ctx;
+  const uTime  = gl.getUniformLocation(prog, 'u_time');
+  const uRes   = gl.getUniformLocation(prog, 'u_res');
+  const uSeed  = gl.getUniformLocation(prog, 'u_seed');
+  const uC1    = gl.getUniformLocation(prog, 'u_c1');
+  const uC2    = gl.getUniformLocation(prog, 'u_c2');
+  const uC3    = gl.getUniformLocation(prog, 'u_c3');
+  const uC4    = gl.getUniformLocation(prog, 'u_c4');
+  const uSpeed = gl.getUniformLocation(prog, 'u_speed');
+  const uWarp  = gl.getUniformLocation(prog, 'u_warp');
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    c.width  = w * dpr;
+    c.height = h * dpr;
+    gl.viewport(0, 0, c.width, c.height);
+  }
+  resize();
+  new ResizeObserver(resize).observe(c);
+
+  const t0 = performance.now();
+  let visible = false;
+  new IntersectionObserver(([e]) => visible = e.isIntersecting, { threshold: 0.05 }).observe(c);
+
+  function frame(){
+    if (visible){
+      const t = (performance.now() - t0) / 1000;
+      gl.uniform1f(uTime, t);
+      gl.uniform2f(uRes, c.width, c.height);
+      gl.uniform1f(uSeed, 4.2);
+      gl.uniform3fv(uC1, [0.04,0.02,0.02]);
+      gl.uniform3fv(uC2, [0.30,0.07,0.04]);
+      gl.uniform3fv(uC3, [0.85,0.22,0.08]);
+      gl.uniform3fv(uC4, [1.00,0.55,0.22]);
+      gl.uniform1f(uSpeed, 0.7);
+      gl.uniform1f(uWarp, 3.4);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
