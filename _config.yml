@@ -2,7 +2,7 @@
 title: devengines
 email: mail.devengines@gmail.com
 description: "My portfolio site"
-baseurl: ""
+baseurl: "/portfolio-site"
 url: ""
 
 twitter_username:
